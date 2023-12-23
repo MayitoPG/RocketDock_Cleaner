@@ -4,19 +4,21 @@ settings = Path() / "Settings.ini"
 result = Path() / "result.ini"
 
 
-def parse_rocket_dock_config(config_path):
-    lines_to_keep = []
-    with open(config_path, "r") as file:
-        for line in file:
-            lines_to_keep.append(line)
-    print(lines_to_keep)
-    return lines_to_keep
-
-
-def check_and_remove_nonexistent_icons(lines):
+def check_and_remove_nonexistent_icons(setting):
+    # lists I need
+    listing = []
     new_lines = []
+    sec_list = []
+    un_sectioned = []
+
+    # read file
+    with open(setting, "r") as file:
+        for line in file:
+            listing.append(line)
+
+    # check keys and values
     command_key = None
-    for line in lines:
+    for line in listing:
         key_value = line.split("=", 1)
         if len(key_value) == 2:
             key, value = map(str.strip, key_value)
@@ -28,22 +30,23 @@ def check_and_remove_nonexistent_icons(lines):
             command_key = key
             n_command_line = value.split("=")[0].strip()
             n_command_path = Path(n_command_line)
-            print(n_command_path)
             if n_command_path.exists():
                 new_lines.append(line)
             else:
-                new_lines = [
-                    index
-                    for index in new_lines
-                    if not index.startswith(command_key.split("-")[0] + "-")
-                ]
+                sec_list.append(command_key.split("-")[0])
+                new_lines.append(line)
         else:
             new_lines.append(line)
-    return new_lines
+
+    # remove useless sections
+    for item in new_lines:
+        number = item.split("-")[0]
+        if item.startswith(number) and number not in sec_list:
+            un_sectioned.append(item)
+    return un_sectioned
 
 
-
-def renumerator(new_lines):
+def enumerator(new_lines):
     reminder = 0
     final_lines = []
     for line in new_lines:
@@ -61,12 +64,10 @@ def renumerator(new_lines):
 
 
 def update_rocket_dock_config(config_path):
-    list_of_lines = parse_rocket_dock_config(config_path)
-    final_list = renumerator(list_of_lines)
-    left_lines = check_and_remove_nonexistent_icons(final_list)
-
+    final_list = check_and_remove_nonexistent_icons(config_path)
+    setting_updated = enumerator(final_list)
     with open(result, "w") as file:
-        file.writelines(left_lines)
+        file.writelines(setting_updated)
 
 
 update_rocket_dock_config(settings)
